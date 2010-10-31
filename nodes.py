@@ -1,9 +1,5 @@
 import urwid
 
-from __main__ import logger
-
-log_call = logger.log_call
-
 class ObjectNode(urwid.ParentNode): # FIXME: TreeNode
     def __init__(self, name, object, parent=None, depth=0):
         super(ObjectNode, self).__init__(name, key=name,
@@ -11,7 +7,6 @@ class ObjectNode(urwid.ParentNode): # FIXME: TreeNode
         self.name = name
         self.object = object
 
-    @log_call
     def create_child_node(self, name, object):
         try:
             DataNodeType= _primitives[type(object)]
@@ -21,21 +16,18 @@ class ObjectNode(urwid.ParentNode): # FIXME: TreeNode
             return ObjectNode(name, object,
                               parent=self, depth=self.get_depth()+1)
 
-    @log_call
     def render_name(self):
         return str(self.name)
 
-    @log_call
     def render_value(self):
         return str(self.object)
 
     def has_children(self): return True
 
     def load_child_node(self, key):
-        object = getattr(self, key)
+        object = getattr(self.object, key)
         return self.create_child_node(key, object)
 
-    @log_call
     def load_child_keys(self):
         return dir(self.object)
 
@@ -46,7 +38,6 @@ class ObjectNode(urwid.ParentNode): # FIXME: TreeNode
     get_child_node = urwid.ParentNode.get_child_node
 
 class DictionaryNode(ObjectNode):
-    @log_call
     def render_name(self):
         return repr(self.name)
 
@@ -54,7 +45,6 @@ class DictionaryNode(ObjectNode):
         object = self.object[key]
         return self.create_child_node(key, object)
 
-    @log_call
     def load_child_keys(self):
         return self.object.keys()
 
