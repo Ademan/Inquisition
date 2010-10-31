@@ -4,7 +4,7 @@ from __main__ import logger
 
 log_call = logger.log_call
 
-class ObjectNode(urwid.TreeNode):
+class ObjectNode(urwid.ParentNode): # FIXME: TreeNode
     def __init__(self, name, object, parent=None, depth=0):
         super(ObjectNode, self).__init__(name, key=name,
                                 parent=parent, depth=depth)
@@ -28,6 +28,8 @@ class ObjectNode(urwid.TreeNode):
     @log_call
     def render_value(self):
         return str(self.object)
+
+    def has_children(self): return True
 
     def load_child_node(self, key):
         object = getattr(self, key)
@@ -118,6 +120,8 @@ class FilteredObjectNode(ObjectNode):
                     filter.append(key)
 
 class DataNode(ObjectNode):
+    def has_children(self): return False
+
     def load_child_node(self, key):
         return None
 

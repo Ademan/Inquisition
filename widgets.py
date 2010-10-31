@@ -32,7 +32,8 @@ class TreeLabelWidget(urwid.Text):
 class ObjectWidget(urwid.TreeWidget):
     def __init__(self, node):
         super(ObjectWidget, self).__init__(node)
-        self.expanded = True
+        #self.expanded = True
+        self.is_leaf = False
     def load_inner_widget(self):
         return TreeLabelWidget(self, self.get_node())
 
