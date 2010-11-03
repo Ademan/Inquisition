@@ -8,6 +8,10 @@ class ObjectNode(urwid.ParentNode): # FIXME: TreeNode
         self.object = object
 
     def create_child_node(self, name, object):
+        if inspect.isroutine(object):
+            return FunctionNode(name, object,
+                                parent=self, depth=self.get_depth()+1)
+
         try:
             DataNodeType= _primitives[type(object)]
             return DataNodeType(name, object,
@@ -21,6 +25,9 @@ class ObjectNode(urwid.ParentNode): # FIXME: TreeNode
 
     def render_value(self):
         return str(self.object)
+
+    def attribute_name(self):
+        return 'object'
 
     def has_children(self): return True
 
@@ -118,8 +125,75 @@ class DataNode(ObjectNode):
     def load_child_keys(self):
         return None
 
+    def attribute_name(self): return 'primitive'
+
+class ReprNode(DataNode):
+    def __init__(self, name, object, parent=None, depth=0):
+        super(DataNode, self).__init__(name, object, parent=parent, depth=depth)
+        self._attribute_name = parent.attribute_name()
+        self.name = name
+        self.object = object
+
+    def attribute_name(self): return self._attribute_name
+
+class SourceWidget(urwid.TreeWidget):
+    def load_inner_widget(self):
+        object = self.get_node().object
+        return urwid.Text(inspect.getsource(object))
+
+class SourceNode(DataNode):
+    def load_widget(self):
+        return SourceWidget(self)
+
+class FunctionNode(ObjectNode):
+    def render_value(self):
+        reprstr = repr(self.object)
+        try:
+            f = self.object
+            argspec = inspect.formatargspec(*inspect.getargspec(f))
+            return '%s%s' % (self.object.__name__, argspec)
+        except AttributeError, e:
+            return reprstr
+        except TypeError, e:
+            return reprstr
+
+    def attribute_name(self): return 'method'
+
+    def load_child_keys(self):
+        keys = ['repr']
+
+        try:
+            inspect.getsource(self.object)
+            keys.append('source')
+        except IOError, e:
+            pass
+
+        return keys
+
+    def load_child_node(self, key):
+        if key == 'repr':
+            return ReprNode('repr', self.object,
+                            parent=self, depth=self.get_depth()+1)
+        elif key == 'source':
+            return SourceNode('source', self.object,
+                              parent=self, depth=self.get_depth()+1)
+
+import types
+import inspect
+
+MethodWrapperType = type([].__str__)
+
 _primitives = {int: DataNode,
+               long: DataNode,
+
                str: DataNode,
+               unicode: DataNode,
+
                float: DataNode,
+               complex: DataNode,
+
+               bool: DataNode,
+               types.NoneType: DataNode,
+               MethodWrapperType: FunctionNode,
                }
 
