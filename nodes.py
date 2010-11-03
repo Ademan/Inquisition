@@ -165,8 +165,8 @@ class FunctionNode(ObjectNode):
         try:
             inspect.getsource(self.object)
             keys.append('source')
-        except IOError, e:
-            pass
+        except TypeError, e: pass
+        except IOError, e: pass
 
         return keys
 
