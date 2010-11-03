@@ -4,8 +4,6 @@ from sys import path
 
 path.insert(0, '/home/dan/Projects/urwid') # FIXME: remove!
 
-print path
-
 from logger import LoggingCallLogger, DecorateAll
 import logging
 
