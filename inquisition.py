@@ -16,8 +16,6 @@ cclogger = DecorateAll(logger.log_call)
 
 import urwid
 
-from nodes import DictionaryNode
-
 class ObjectInspector(object):
     palette = [('body', 'default', 'black'),
                ('name', 'dark green', 'black'),
@@ -41,8 +39,15 @@ class ObjectInspector(object):
                                    self.palette, unhandled_input=self.unhandled_keys)
         return self.loop
 
+def inspect_object(obj, name='Root Object'):
+    from nodes import ObjectNode
+    node = ObjectNode(name, obj)
+    ObjectInspector(node).loop().run()
+
+def inspect_dictionary(dict, name="Root Dictionary"):
+    from nodes import DictionaryNode
+    node = DictionaryNode(name, dict)
+    ObjectInspector(node).loop().run()
+
 if __name__ == '__main__':
-    node = DictionaryNode('locals', locals())
-    objins = ObjectInspector(node)
-    loop = objins.loop()
-    loop.run()
+    inspect_dictionary(locals(), 'locals')
