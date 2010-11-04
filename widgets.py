@@ -73,6 +73,13 @@ class ObjectWidget(urwid.TreeWidget):
         super(ObjectWidget, self).__init__(node)
         self.expanded = False
 
+    @property
+    def is_leaf(self):
+        return not bool(self.get_node().get_child_keys())
+
+    @is_leaf.setter
+    def is_leaf(self, value): pass
+
     def load_inner_widget(self):
         return TreeLabelWidget(self, self.get_node())
 

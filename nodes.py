@@ -73,7 +73,7 @@ class ObjectFilterNode(ObjectNode):
 
     @log_call
     def load_child_keys(self):
-        return self.keys
+        return self.keys if self.keys else None
 
     def load_child_node(self, key):
         object = getattr(self.parent.object, key)
