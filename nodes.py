@@ -1,5 +1,16 @@
 import urwid
 
+from __main__ import logger
+log_call = logger.log_call
+
+def object_node_type(object):
+        if inspect.isroutine(object):
+            return FunctionNode
+        try:
+            return _primitives[type(object)]
+        except KeyError, e:
+            return FilteredObjectNode
+
 class ObjectNode(urwid.ParentNode): # FIXME: TreeNode
     def __init__(self, name, object, parent=None, depth=0):
         super(ObjectNode, self).__init__(name, key=name,
@@ -8,33 +19,26 @@ class ObjectNode(urwid.ParentNode): # FIXME: TreeNode
         self.object = object
 
     def create_child_node(self, name, object):
-        if inspect.isroutine(object):
-            return FunctionNode(name, object,
-                                parent=self, depth=self.get_depth()+1)
+        NodeType = object_node_type(object)
+        return NodeType(name, object, parent=self, depth=self.get_depth()+1)
 
-        try:
-            DataNodeType= _primitives[type(object)]
-            return DataNodeType(name, object,
-                            parent=self, depth=self.get_depth()+1)
-        except KeyError, e:
-            return ObjectNode(name, object,
-                              parent=self, depth=self.get_depth()+1)
+    def render_child_name(self, name):
+        return str(name)
 
     def render_name(self):
-        return str(self.name)
+        return self.get_parent().render_child_name(self.name)
 
     def render_value(self):
         return str(self.object)
 
-    def attribute_name(self):
-        return 'object'
-
     def has_children(self): return True
 
+    @log_call
     def load_child_node(self, key):
         object = getattr(self.object, key)
         return self.create_child_node(key, object)
 
+    @log_call
     def load_child_keys(self):
         return dir(self.object)
 
@@ -52,22 +56,30 @@ class DictionaryNode(ObjectNode):
         object = self.object[key]
         return self.create_child_node(key, object)
 
+    @log_call
     def load_child_keys(self):
         return self.object.keys()
 
 class ObjectFilterNode(ObjectNode):
+    filter_name = 'Default Filter'
     def __init__(self, parent):
-        ObjectNode.__init__(self, parent)
+        super(ObjectFilterNode, self).__init__(self.filter_name, parent.object,
+                                               parent=parent, depth=parent.get_depth()+1)
         self.parent = parent
         self.keys = []
 
     def append(self, value):
-        self.keys.append(self)
+        self.keys.append(value)
 
+    @log_call
     def load_child_keys(self):
         return self.keys
 
-    def filter_key(self, key): return True
+    def load_child_node(self, key):
+        object = getattr(self.parent.object, key)
+        return self.create_child_node(key, object)
+
+    def key_filter(self, key): return True
 
 class ObjectOperatorsNode(ObjectFilterNode):
     filter_name = "Operators"
@@ -89,8 +101,9 @@ class ObjectOperatorsNode(ObjectFilterNode):
                           '__getitem__', '__getslice__',
                           '__setitem__', '__setslice__',
                           '__delitem__', '__delslice__',]
+    basic_operators = ['__int__', '__str__', '__unicode__', '__repr__']
 
-    operators = comparison_operators + boolean_operators + math_operators + binary_operators
+    operators = comparison_operators + boolean_operators + math_operators + binary_operators + basic_operators
 
     def key_filter(self, key):
         return key in self.operators
@@ -105,16 +118,25 @@ class SpecialObjectNode(ObjectFilterNode):
 
 class FilteredObjectNode(ObjectNode):
     filter_nodes = [ObjectOperatorsNode, SpecialObjectNode, ObjectFilterNode]
-    def __init__(self, name, object):
+    def __init__(self, name, object, parent=None, depth=0):
+        super(FilteredObjectNode, self).__init__(name, object,
+                                                 parent=parent, depth=depth)
+        self.name = name
         self.object = object
         self.children = []
-        self.filters = [filter(self) for filter in self.filter_nodes]
+        self.filters = dict([(filter.filter_name, filter(self)) for filter in self.filter_nodes])
 
+    @log_call
     def load_child_keys(self):
         for key in dir(self.object):
-            for filter in self.filters:
+            for filter in self.filters.itervalues():
                 if filter.key_filter(key):
                     filter.append(key)
+                    break
+        return self.filters.keys()
+
+    def load_child_node(self, key):
+        return self.filters[key]
 
 class DataNode(ObjectNode):
     def has_children(self): return False
@@ -122,19 +144,15 @@ class DataNode(ObjectNode):
     def load_child_node(self, key):
         return None
 
+    @log_call
     def load_child_keys(self):
         return None
-
-    def attribute_name(self): return 'primitive'
 
 class ReprNode(DataNode):
     def __init__(self, name, object, parent=None, depth=0):
         super(DataNode, self).__init__(name, object, parent=parent, depth=depth)
-        self._attribute_name = parent.attribute_name()
         self.name = name
         self.object = object
-
-    def attribute_name(self): return self._attribute_name
 
 class SourceWidget(urwid.TreeWidget):
     def load_inner_widget(self):
@@ -157,8 +175,7 @@ class FunctionNode(ObjectNode):
         except TypeError, e:
             return reprstr
 
-    def attribute_name(self): return 'method'
-
+    @log_call
     def load_child_keys(self):
         keys = ['repr']
 
