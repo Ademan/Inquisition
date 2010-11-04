@@ -14,11 +14,13 @@ _primitive_list = [int, long,
                    
 _primitives = dict([(t, 'primitive') for t in _primitive_list])
 
-def attr_for_type(t):
-    if inspect.isroutine(t):
+def attr_for_object(object):
+    if inspect.isroutine(object):
+        return 'method'
+    elif isinstance(object, MethodWrapperType):
         return 'method'
     try:
-        return _primitives[t]
+        return _primitives[type(object)]
     except KeyError, e:
         return 'object'
 
@@ -37,7 +39,7 @@ class TreeLabelWidget(urwid.Text):
     def render(self, size, focus=False):
         namestr = self.render_name()
         objectstr = self.render_object()
-        nodeattr = attr_for_type(type(self.tree_node.object))
+        nodeattr = attr_for_object(self.tree_node.object)
 
         spare_room = size[0] - len(namestr) - len(objectstr)
         
@@ -75,7 +77,10 @@ class ObjectWidget(urwid.TreeWidget):
 
     @property
     def is_leaf(self):
-        return not bool(self.get_node().get_child_keys())
+        try:
+            return not bool(self.get_node().get_child_keys())
+        except AttributeError, e:
+            return False
 
     @is_leaf.setter
     def is_leaf(self, value): pass
