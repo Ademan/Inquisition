@@ -3,8 +3,12 @@ import inspect
 
 import urwid
 
-from __main__ import logger
-log_call = logger.log_call
+try:
+    from __main__ import logger
+    log_call = logger.log_call
+except ImportError, e:
+    def log_call(f):
+        return f
 
 def object_node_type(object):
         if inspect.isroutine(object):
@@ -46,8 +50,8 @@ class ObjectNode(urwid.ParentNode): # FIXME: TreeNode
         return dir(self.object)
 
     def load_widget(self):
-        import widgets
-        return widgets.ObjectWidget(self)
+        from inquisition.widgets import ObjectWidget
+        return ObjectWidget(self)
 
     get_child_node = urwid.ParentNode.get_child_node
 
