@@ -1,0 +1,4 @@
+Install with
+`python setup.py install`
+
+Run with inquisition.py
