@@ -1,3 +1,6 @@
+import types
+import inspect
+
 import urwid
 
 from __main__ import logger
@@ -194,9 +197,6 @@ class FunctionNode(ObjectNode):
         elif key == 'source':
             return SourceNode('source', self.object,
                               parent=self, depth=self.get_depth()+1)
-
-import types
-import inspect
 
 MethodWrapperType = type([].__str__)
 

@@ -70,6 +70,18 @@ class DictTreeLabelWidget(TreeLabelWidget):
     def render_name(self):
         return repr(self.tree_node.name)
 
+def FunctionTreeLabelWidget(ObjectWidget):
+    def render_object(self):
+        f = self.tree_node.object
+        reprstr = repr(f)
+        try:
+            argspec = inspect.formatargspec(*inspect.getargspec(f))
+            return '%s%s' % (self.object.__name__, argspec)
+        except AttributeError, e:
+            return reprstr
+        except TypeError, e:
+            return reprstr
+
 class ObjectWidget(urwid.TreeWidget):
     def __init__(self, node):
         super(ObjectWidget, self).__init__(node)
